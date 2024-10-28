@@ -145,19 +145,23 @@ def main():
             "dataset": "MNIST"
         }
     )
-    startTime = time.perf_counter()
+    start = torch.cuda.Event(enable_timing=True)
+    end = torch.cuda.Event(enable_timing=True)
 
+    start.record()
     for epoch in range(1, args.epochs + 1):
         train(args, model, device, train_loader, optimizer, epoch)
         test(model, device, test_loader)
         scheduler.step()
+    end.record()
+    torch.cuda.synchronize()
+    elapsed_time = start.elapsed_time(end)
 
     if args.save_model:
         torch.save(model.state_dict(), "mnist_cnn.pt")
-    
-    endTime = time.perf_counter()
-    print(f"Training Time: {endTime - startTime} seconds")
-    wandb.log({"Training Time": endTime - startTime})
+
+    print(f"Training Time: {elapsed_time / 1000} seconds")
+    wandb.log({"Training Time": elapsed_time / 1000})
     wandb.finish()
 
 
